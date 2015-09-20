@@ -47,19 +47,31 @@ Note : Before running any code, set your working directory to the project folder
 
 The data was loaded as shown below. No preprocessing of the data was carried out before analysis.
 
-```{r, Loading,echo=TRUE}
+
+```r
 #load required libraries
 library(dplyr)
 library(ggplot2)
 
 #read the raw data from the activity folder
 activity.raw <- read.csv("activity/activity.csv")
-
 ```
 The summary of the raw data is as shown below :
 
-```{r, RawSummary1,echo=TRUE}
+
+```r
 summary(activity.raw)
+```
+
+```
+##      steps                date          interval     
+##  Min.   :  0.00   2012-10-01:  288   Min.   :   0.0  
+##  1st Qu.:  0.00   2012-10-02:  288   1st Qu.: 588.8  
+##  Median :  0.00   2012-10-03:  288   Median :1177.5  
+##  Mean   : 37.38   2012-10-04:  288   Mean   :1177.5  
+##  3rd Qu.: 12.00   2012-10-05:  288   3rd Qu.:1766.2  
+##  Max.   :806.00   2012-10-06:  288   Max.   :2355.0  
+##  NA's   :2304     (Other)   :15840
 ```
 
 ## Mean total number of steps taken per day
@@ -67,7 +79,8 @@ summary(activity.raw)
 The mean total number of steps taken per day was calculated by first converting the date strings to
 R Dates then grouping the raw data by Date. Finally, using dplyr, the total steps per day and the mean steps per day were calculated by summarizing the grouped data.
 
-```{r,MeanTotalSteps,echo=TRUE}
+
+```r
 #convert date strings to R dates
 activity.raw$date <- as.Date(activity.raw$date,"%Y-%m-%d")
 
@@ -82,16 +95,23 @@ sumSteps.raw <- summarize(activity.raw.byDate,
 
 A summary of the grouped calculation is as shown below.
 
-```{r,sumSteps1,echo=TRUE}
+
+```r
 #print summary
 s <- summary(sumSteps.raw$total.steps.perDay)
 print(s)
 ```
 
+```
+##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+##       0    6778   10400    9354   12810   21190
+```
+
 A histogram of the total steps per day using the base plotting system is shown below.
 Lines have been added to the plot indicating the Mean and Median values.
 
-```{r, Figure1,echo=TRUE}
+
+```r
 #histogram
 hist(sumSteps.raw$total.steps.perDay,main = "Total Steps per Day",xlab = "Total Steps")
 abline(v = s[4],col="red",lwd=2)
@@ -99,12 +119,25 @@ abline(v = s[3],col="blue",lwd=2)
 legend("topright",legend = c("Mean","Median"),lty=c(1,1),lwd=c(2,2),col=c("red","blue"))
 ```
 
+![plot of chunk Figure1](figure/Figure1-1.png) 
+
 From the summary, and, as shown on the plot, the mean and median values are as follows:
 
-```{r,Result1,echo=TRUE}
-print(paste("Mean of Total Steps Taken per Day = ",s[4],sep = ""))
 
+```r
+print(paste("Mean of Total Steps Taken per Day = ",s[4],sep = ""))
+```
+
+```
+## [1] "Mean of Total Steps Taken per Day = 9354"
+```
+
+```r
 print(paste("Median of Total Steps Taken per Day = ",s[3],sep = ""))
+```
+
+```
+## [1] "Median of Total Steps Taken per Day = 10400"
 ```
 
 ## Average daily activity pattern
@@ -113,7 +146,8 @@ The average daily activity pattern as shown below was calculated by first groupi
 5 minute interval, then summarizing to get the average number of steps per interval. The results
 were then plotted as a time-series plot.
 
-```{r, AverageStepsPerInterval,echo=TRUE}
+
+```r
 #time-series plot of average steps per time interval
 #group by interval
 activity.raw.byInterval <- group_by(activity.raw,interval)
@@ -126,7 +160,8 @@ max.steps <- max(intervalSteps$avg.steps.perInterval)
 #Interval containing the highest no of steps
 max.interval.steps <- intervalSteps$interval[which.max(intervalSteps$avg.steps.perInterval)]
 ```
-```{r,ActivityPatternPlot,echo=TRUE}
+
+```r
 #Daily Activity Pattern Plot
 plot(intervalSteps$interval,intervalSteps$avg.steps.perInterval,type = "l", lty = 1,
      lwd = 1.5,col="blue",
@@ -137,60 +172,96 @@ abline(v=max.interval.steps,lty=2,lwd=1.5,col="red")
 legend("topright",legend = "Highest Steps",lty=2,lwd=1.5,col="red")
 ```
 
-```{r,ActivityPatternResult,echo=TRUE}
+![plot of chunk ActivityPatternPlot](figure/ActivityPatternPlot-1.png) 
+
+
+```r
 print(paste("Interval which contains the highest number of steps (",
             round(max.steps,0),") is interval : ",
             max.interval.steps,sep = "")) 
+```
+
+```
+## [1] "Interval which contains the highest number of steps (206) is interval : 835"
 ```
 
 ## Imputing missing values
 
 From the summary of the raw data shown below, it can be seen that there are 2304 missing steps values.
 
-```{r,RawSummary2,echo=TRUE}
+
+```r
 summary(activity.raw)
+```
+
+```
+##      steps             date               interval     
+##  Min.   :  0.00   Min.   :2012-10-01   Min.   :   0.0  
+##  1st Qu.:  0.00   1st Qu.:2012-10-16   1st Qu.: 588.8  
+##  Median :  0.00   Median :2012-10-31   Median :1177.5  
+##  Mean   : 37.38   Mean   :2012-10-31   Mean   :1177.5  
+##  3rd Qu.: 12.00   3rd Qu.:2012-11-15   3rd Qu.:1766.2  
+##  Max.   :806.00   Max.   :2012-11-30   Max.   :2355.0  
+##  NA's   :2304
 ```
 
 The strategy used to impute the missing values is to replace them with the mean steps value of the corresponding 5 minute interval from intervalSteps calculated in the daily activity pattern section above.
 
 First, a copy of the raw dataset is made to hold the cleaned up data.
-```{r,CreateRawCopy,echo=TRUE}
+
+```r
 #copy the raw dataset
 activity.clean <- activity.raw
 ```
 The missing values are then extracted from the raw dataset.
-```{r,ExtractNA,echo=TRUE}
+
+```r
 #extract the NA's
 steps.na <- subset(activity.raw,is.na(steps))
 ```
 Get the number of missing days
-```{r,CalculateMissingDays,echo=TRUE}
+
+```r
 #Get number of missing days
 missing.days <- length(unique(steps.na$date))
 ```
 Replace the missing values with those in intervalSteps, replicating by number of missing days.
 
-```{r}
+
+```r
 #replace NAs with those in intervalSteps replicating by no of missing days
 steps.na$steps <- rep(intervalSteps$avg.steps.perInterval,missing.days)
 ```
 
 Finally, replace the missing values in the raw data copy to produce a cleaned data set.
 
-```{r,CleanDataSet,echo=TRUE}
+
+```r
 #replace the NA's in the activity dataset
 activity.clean$steps <- replace(activity.clean$steps,is.na(activity.clean$steps),steps.na$steps)
 ```
 
 The summary of the cleaned data set is as follows:
 
-```{r,CleanSummary,echo=TRUE}
+
+```r
 summary(activity.clean)
+```
+
+```
+##      steps             date               interval     
+##  Min.   :  0.00   Min.   :2012-10-01   Min.   :   0.0  
+##  1st Qu.:  0.00   1st Qu.:2012-10-16   1st Qu.: 588.8  
+##  Median :  0.00   Median :2012-10-31   Median :1177.5  
+##  Mean   : 37.38   Mean   :2012-10-31   Mean   :1177.5  
+##  3rd Qu.: 27.00   3rd Qu.:2012-11-15   3rd Qu.:1766.2  
+##  Max.   :806.00   Max.   :2012-11-30   Max.   :2355.0
 ```
 
 A histogram plot of the Total Steps per day after replacing the missing steps values is as shown below. Lines have been added to the plot indicating the Mean and Median values.
 
-```{r,SumSteps.clean,echo=TRUE}
+
+```r
 #group activity.clean by date
 activity.clean.byDate <- group_by(activity.clean,date)
 
@@ -204,7 +275,13 @@ s <- summary(sumSteps.clean$total.steps.perDay)
 print(s)
 ```
 
-```{r, Figure3,echo=TRUE}
+```
+##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+##      41    9819   10770   10770   12810   21190
+```
+
+
+```r
 #histogram
 hist(sumSteps.clean$total.steps.perDay,main = "Total Steps per Day",xlab = "Total Steps")
 abline(v = s[4],col="red",lwd=2)
@@ -212,12 +289,25 @@ abline(v = s[3],col="blue",lwd=2)
 legend("topright",legend = c("Mean","Median"),lty=c(1,1),lwd=c(2,2),col=c("red","blue"))
 ```
 
+![plot of chunk Figure3](figure/Figure3-1.png) 
+
 From the summary, and, as shown on the plot, the mean and median values are as follows:
 
-```{r,Result2,echo=TRUE}
-print(paste("Mean of Total Steps Taken per Day = ",s[4],sep = ""))
 
+```r
+print(paste("Mean of Total Steps Taken per Day = ",s[4],sep = ""))
+```
+
+```
+## [1] "Mean of Total Steps Taken per Day = 10770"
+```
+
+```r
 print(paste("Median of Total Steps Taken per Day = ",s[3],sep = ""))
+```
+
+```
+## [1] "Median of Total Steps Taken per Day = 10770"
 ```
 
 The result of replacing the missing steps values is that the cleaned data Mean and Medians are now
@@ -229,7 +319,8 @@ appears more normal.
 To compare the activity patterns bewteen weekdays and weekends, we first add columns to the cleaned
 dataset to indicate the day of the week the activity took place (day) and whether this was a weekday or weekend (period). The period is also converted to a factor to facilitate the creation of the panel plot.
 
-```{r,AddDayandPeriod,echo=TRUE}
+
+```r
 #add a column indicating day of the week and a column indicating weekday or weekend
 activity.clean <- mutate(activity.clean,
                          day = weekdays(activity.clean$date),
@@ -242,7 +333,8 @@ activity.clean$period <- as.factor(activity.clean$period)
 
 A panel plot of the activity patterns, split by period, created using ggplot2, is shown below.
 
-```{r,Figure4,echo=TRUE}
+
+```r
 #time-series panel plot of average steps per weekend/weekday time interval
 #group by period and interval
 activity.clean.byPeriod <- group_by(activity.clean,period,interval)
@@ -254,8 +346,9 @@ ggplot(intervalSteps,aes(interval,avg.steps.perInterval)) +
     facet_wrap(~ period,ncol = 1) +
     ggtitle("Weekday/Weekend Activity Comparison") +
     labs(x="Interval",y="Average Steps Per Interval")
-
 ```
+
+![plot of chunk Figure4](figure/Figure4-1.png) 
 
 Some initial interesting observations can be made from the plots of weekend and weekday activity patterns.
 
